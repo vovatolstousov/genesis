@@ -1,0 +1,53 @@
+#web:
+#  build: .
+#  command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8888"
+#  ports:
+#    - "8888:8888"
+#   link:
+#     -celery
+#celery:
+#  command: bash -c "celery worker -l info -A sales_platform --beat"
+
+mydb:
+  image: mysql:5.7.16
+ # image: mysql
+  hostname: localhost
+  ports:
+    - "3307:3306"
+  environment:
+    MYSQL_ROOT_USER: testuser
+    MYSQL_ROOT_PASSWORD: geneSIS2016
+    MYSQL_DATABASE: genesis
+
+# RabbitMQ
+broker:
+  hostname: broker
+  image: rabbitmq:3.6.5
+  environment:
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_PASS: guest
+    RABBITMQ_BROKER_HOST: broker
+    RABBITMQ_BROKER_PORT: 5672
+  ports:
+    - "5673:5672"  # we forward this port because it's useful for debugging
+    - "15673:15672"  # here, we can access rabbitmq management plugin
+    
+djangoweb:
+  build: .
+  hostname: django
+  command: bash -c "sleep 25 && python manage.py migrate && ./celera.sh && python manage.py runserver 0.0.0.0:8288"
+  ports:
+    - "8888:8288"
+  links:
+    - mydb
+    - broker 
+  environment:
+    GENESIS_DATABASE_NAME: genesis
+    GENESIS_DATABASE_USER: testuser
+    GENESIS_DATABASE_PASSWORD: geneSIS2016
+    GENESIS_DATABASE_HOST: localhost
+    GENESIS_DATABASE_PORT: 3306
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_PASS: guest
+    RABBITMQ_BROKER_HOST: broker
+    RABBITMQ_BROKER_PORT: 5672
